@@ -1,10 +1,12 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
 import type { Perfil, Reputacion } from "../src/lib/arkiv/types.js"
 
-const SYSTEM_PROMPT = `Sos el buscador de la red SaltaDev. Te dan una lista de perfiles y una búsqueda.
+const SYSTEM_PROMPT = `Sos el buscador de SaltaDev. Analizá la búsqueda y devolvé SOLO los perfiles que realmente encajan con lo que se pide.
+Si alguien busca "científico de datos", no incluyas backends ni diseñadores. No agregues perfiles irrelevantes solo para completar la lista.
+Devolvé máximo 4-5 perfiles, mínimo 0 (si ninguno encaja, devolvé "orden": []).
+Ordená de mayor a menor relevancia, priorizando a quienes tengan estrellas altas en el brazo relevante.
 Respondé SOLO con un JSON válido, sin markdown ni texto extra:
-{ "orden": ["perfilId1","perfilId2",...], "presentacion": "texto cálido de 2-3 oraciones presentando los resultados" }.
-Priorizá a quienes mejor encajan con la búsqueda y tengan estrellas altas en el brazo relevante.`
+{ "orden": ["perfilId1","perfilId2",...], "presentacion": "texto cálido de 2-3 oraciones presentando los resultados; si no hay coincidencias, decí amablemente que no encontraste perfiles que encajen con esa búsqueda" }`
 
 function perfilATexto(perfil: Perfil, rep: Reputacion): string {
   const hitos = perfil.hitos.map((h) => h.texto).join(", ") || "ninguno"
@@ -59,12 +61,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const texto: string = data.content?.[0]?.text ?? ""
     const parsed = JSON.parse(texto) as { orden: string[]; presentacion: string }
 
-    const ordenMap = new Map(parsed.orden.map((id: string, i: number) => [id, i]))
-    const ordenados = [...perfiles].sort((a, b) => {
-      const ia = ordenMap.get(a.perfilId) ?? Infinity
-      const ib = ordenMap.get(b.perfilId) ?? Infinity
-      return ia - ib
-    })
+    const porId = new Map(perfiles.map((p) => [p.perfilId, p]))
+    const ordenados = parsed.orden
+      .map((id) => porId.get(id))
+      .filter((p): p is Perfil => p !== undefined)
 
     res.json({ ordenados, presentacion: parsed.presentacion ?? "" })
   } catch {
