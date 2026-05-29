@@ -55,8 +55,17 @@ export default function Registro() {
   async function enviar(e: React.FormEvent) {
     e.preventDefault()
     setEstado("enviando")
-    // TODO: reemplazar por crearPerfil() de Arkiv
-    await new Promise((r) => setTimeout(r, 1000))
+    // TODO: POST /api/crear-perfil llama a crearPerfil() de Arkiv con WalletClient cuando esté listo
+    await fetch("/api/crear-perfil", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...form,
+        hitos: form.hitos
+          .filter((h) => h.trim())
+          .map((texto, i) => ({ id: `hito-${i + 1}`, texto })),
+      }),
+    })
     setEstado("exito")
   }
 

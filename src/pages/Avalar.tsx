@@ -103,8 +103,21 @@ export default function Avalar() {
 
   async function enviar() {
     setEstado("enviando")
-    // TODO: reemplazar por crearAval() de Arkiv
-    await new Promise((r) => setTimeout(r, 1000))
+    // TODO: POST /api/avalar llama a crearAval() de Arkiv con WalletClient cuando esté listo
+    await fetch("/api/avalar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        avalId: `aval-${Date.now()}`,
+        avalado,
+        avalador,
+        brazo,
+        objetivo,
+        puntuacion,
+        comentario,
+        fecha: new Date().toISOString(),
+      }),
+    })
     setEstado("exito")
   }
 

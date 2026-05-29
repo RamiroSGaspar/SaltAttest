@@ -1,13 +1,15 @@
+import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { CheckCircle } from "lucide-react"
+import { CheckCircle, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { PERFILES_MOCK, REPUTACIONES_MOCK, LABEL_ITEM_BLANDO } from "@/lib/mocks"
-import type { Reputacion } from "@/lib/arkiv/types"
+import { LABEL_ITEM_BLANDO } from "@/lib/mocks"
+import type { Perfil as TPerfil, Reputacion } from "@/lib/arkiv/types"
 
-// TODO: reemplazar por traerPerfil(id) + traerAvales(id) + calcularEstrellas() de Arkiv
+// TODO: GET /api/perfil/:id llama a traerPerfil() de Arkiv cuando esté listo
+// TODO: GET /api/avales/:id llama a traerAvales() + calcularEstrellas() de Arkiv
 
 function MiniEstrellas({ valor }: { valor: number }) {
   return (
@@ -33,15 +35,12 @@ function MiniEstrellas({ valor }: { valor: number }) {
 
 function SeccionEstrellas({ rep, hitos }: { rep: Reputacion; hitos: { id: string; texto: string }[] }) {
   const hitoMap = Object.fromEntries(hitos.map((h) => [h.id, h.texto]))
-
   return (
     <div className="grid sm:grid-cols-2 gap-4">
-      {/* Blandas */}
       <Card>
         <CardHeader className="pb-2">
           <p className="font-semibold text-sm flex items-center gap-1.5">
-            ★ Blandas
-            <span className="text-lg font-bold text-yellow-500">{rep.estrellasBlandas.toFixed(1)}</span>
+            ★ Blandas <span className="text-lg font-bold text-yellow-500">{rep.estrellasBlandas.toFixed(1)}</span>
           </p>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -57,13 +56,10 @@ function SeccionEstrellas({ rep, hitos }: { rep: Reputacion; hitos: { id: string
           )}
         </CardContent>
       </Card>
-
-      {/* Técnicas */}
       <Card>
         <CardHeader className="pb-2">
           <p className="font-semibold text-sm flex items-center gap-1.5">
-            ★ Técnicas
-            <span className="text-lg font-bold text-yellow-500">{rep.estrellasTecnicas.toFixed(1)}</span>
+            ★ Técnicas <span className="text-lg font-bold text-yellow-500">{rep.estrellasTecnicas.toFixed(1)}</span>
           </p>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -86,17 +82,39 @@ function SeccionEstrellas({ rep, hitos }: { rep: Reputacion; hitos: { id: string
 export default function Perfil() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [perfil, setPerfil] = useState<TPerfil | null>(null)
+  const [rep, setRep] = useState<Reputacion | null>(null)
+  const [cargando, setCargando] = useState(true)
+  const [noEncontrado, setNoEncontrado] = useState(false)
 
-  const perfil = PERFILES_MOCK.find((p) => p.perfilId === id)
-  const rep: Reputacion = REPUTACIONES_MOCK[id ?? ""] ?? {
-    perfilId: id ?? "",
-    estrellasBlandas: 0,
-    estrellasTecnicas: 0,
-    detalleBlandas: [],
-    detalleTecnicas: [],
+  useEffect(() => {
+    if (!id) return
+    setCargando(true)
+    setNoEncontrado(false)
+
+    Promise.all([
+      fetch(`/api/perfil/${id}`),
+      fetch(`/api/avales/${id}`),
+    ])
+      .then(async ([perfilRes]) => {
+        if (!perfilRes.ok) { setNoEncontrado(true); return }
+        const { perfil: p, reputacion: r } = await perfilRes.json()
+        setPerfil(p)
+        setRep(r)
+      })
+      .catch(() => setNoEncontrado(true))
+      .finally(() => setCargando(false))
+  }, [id])
+
+  if (cargando) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
-  if (!perfil) {
+  if (noEncontrado || !perfil || !rep) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-4">
         <p className="text-muted-foreground">Perfil no encontrado.</p>
@@ -109,7 +127,6 @@ export default function Perfil() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
-      {/* Header del perfil */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-start gap-5">
@@ -135,7 +152,6 @@ export default function Perfil() {
         </CardContent>
       </Card>
 
-      {/* Estrellas headline */}
       <div className="grid grid-cols-2 gap-3">
         {[
           { label: "★ Blandas", valor: rep.estrellasBlandas },
@@ -150,10 +166,8 @@ export default function Perfil() {
         ))}
       </div>
 
-      {/* Desglose detallado */}
       <SeccionEstrellas rep={rep} hitos={perfil.hitos} />
 
-      {/* Hitos */}
       {perfil.hitos.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
@@ -176,7 +190,6 @@ export default function Perfil() {
         </Card>
       )}
 
-      {/* Comentarios */}
       <Card>
         <CardHeader className="pb-2">
           <p className="font-semibold text-sm">Comentarios</p>
@@ -186,12 +199,7 @@ export default function Perfil() {
         </CardContent>
       </Card>
 
-      {/* CTA */}
-      <Button
-        size="lg"
-        className="w-full"
-        onClick={() => navigate(`/avalar?avalado=${perfil.perfilId}`)}
-      >
+      <Button size="lg" className="w-full" onClick={() => navigate(`/avalar?avalado=${perfil.perfilId}`)}>
         Avalar a {perfil.nombre.split(" ")[0]}
       </Button>
     </div>
