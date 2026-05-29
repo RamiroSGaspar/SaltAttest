@@ -143,5 +143,7 @@ export function calcularEstrellas(avales: Aval[]): Reputacion {
     perfilId,
     estrellasBlandas: promedioGrupos(blandos),
     estrellasTecnicas: promedioGrupos(tecnicos),
+    detalleBlandas: [],
+    detalleTecnicas: [],
   }
 }
