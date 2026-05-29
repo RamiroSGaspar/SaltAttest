@@ -27,6 +27,35 @@ export const PERFILES_MOCK: Perfil[] = [
 ]
 
 export const REPUTACIONES_MOCK: Record<string, Reputacion> = {
-  "perfil-001": { perfilId: "perfil-001", estrellasBlandas: 4.2, estrellasTecnicas: 4.7 },
-  "perfil-002": { perfilId: "perfil-002", estrellasBlandas: 4.8, estrellasTecnicas: 3.5 },
+  "perfil-001": {
+    perfilId: "perfil-001",
+    estrellasBlandas: 4.2,
+    estrellasTecnicas: 4.7,
+    detalleBlandas: [
+      { item: "comunicacion", promedio: 4.5 },
+      { item: "colaboracion", promedio: 4.0 },
+      { item: "participacion", promedio: 5.0 },
+      { item: "ayuda", promedio: 3.5 },
+      { item: "liderazgo", promedio: 4.0 },
+    ],
+    detalleTecnicas: [
+      { hitoId: "h1", promedio: 4.5 },
+      { hitoId: "h2", promedio: 4.8 },
+    ],
+  },
+  "perfil-002": {
+    perfilId: "perfil-002",
+    estrellasBlandas: 4.8,
+    estrellasTecnicas: 3.5,
+    detalleBlandas: [],
+    detalleTecnicas: [],
+  },
+}
+
+export const LABEL_ITEM_BLANDO: Record<string, string> = {
+  comunicacion: "Comunicación",
+  colaboracion: "Colaboración",
+  participacion: "Participación",
+  ayuda: "Ayuda",
+  liderazgo: "Liderazgo",
 }

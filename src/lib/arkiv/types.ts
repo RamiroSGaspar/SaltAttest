@@ -25,8 +25,20 @@ export interface Aval {
   fecha: string
 }
 
+export interface DetalleBlando {
+  item: string
+  promedio: number
+}
+
+export interface DetalleTecnico {
+  hitoId: string
+  promedio: number
+}
+
 export interface Reputacion {
   perfilId: string
   estrellasBlandas: number
   estrellasTecnicas: number
+  detalleBlandas: DetalleBlando[]
+  detalleTecnicas: DetalleTecnico[]
 }

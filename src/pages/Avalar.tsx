@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PERFILES_MOCK } from "@/lib/mocks"
@@ -73,7 +74,8 @@ function Estrellas({ value, onChange }: { value: number; onChange: (n: number) =
 type Estado = "idle" | "enviando" | "exito"
 
 export default function Avalar() {
-  const [avalado, setAvalado] = useState("")
+  const [searchParams] = useSearchParams()
+  const [avalado, setAvalado] = useState(searchParams.get("avalado") ?? "")
   const [avalador, setAvalador] = useState("")
   const [brazo, setBrazo] = useState<"blando" | "tecnico" | "">("")
   const [objetivo, setObjetivo] = useState("")
