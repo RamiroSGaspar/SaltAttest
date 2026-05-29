@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
-import { PERFILES_MOCK, REPUTACIONES_MOCK } from "../_data"
+import { PERFILES_MOCK, REPUTACIONES_MOCK } from "../_data.js"
 
 // TODO: reemplazar con traerPerfil(id) de Arkiv
 export default function handler(req: VercelRequest, res: VercelResponse) {

@@ -1,4 +1,4 @@
-import type { Perfil, Reputacion } from "../src/lib/arkiv/types"
+import type { Perfil, Reputacion } from "../src/lib/arkiv/types.js"
 
 export const PERFILES_MOCK: Perfil[] = [
   {

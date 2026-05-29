@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
-import type { Perfil, Reputacion } from "../src/lib/arkiv/types"
+import type { Perfil, Reputacion } from "../src/lib/arkiv/types.js"
 
 const SYSTEM_PROMPT = `Sos el buscador de la red SaltaDev. Te dan una lista de perfiles y una búsqueda.
 Respondé SOLO con un JSON válido, sin markdown ni texto extra:
