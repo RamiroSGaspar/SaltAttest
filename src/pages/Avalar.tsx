@@ -1,7 +1,5 @@
 import { useState } from "react"
 import { useSearchParams } from "react-router-dom"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { PERFILES_MOCK } from "@/lib/mocks"
 import type { Perfil } from "@/lib/arkiv/types"
 
@@ -14,57 +12,47 @@ const ITEMS_BLANDOS: { key: string; label: string }[] = [
 ]
 
 function SelectorPerfil({
-  label,
   value,
   onChange,
   excluir,
 }: {
-  label: string
   value: string
   onChange: (id: string) => void
   excluir?: string
 }) {
   return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium">{label}</p>
-      <div className="flex flex-col gap-2">
-        {PERFILES_MOCK.filter((p) => p.perfilId !== excluir).map((perfil) => (
-          <button
-            key={perfil.perfilId}
-            onClick={() => onChange(perfil.perfilId)}
-            className={[
-              "flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition",
-              value === perfil.perfilId
-                ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                : "border-border hover:bg-muted",
-            ].join(" ")}
-          >
-            <img src={perfil.foto} alt={perfil.nombre} className="h-9 w-9 rounded-full object-cover" />
-            <div>
-              <p className="text-sm font-medium leading-tight">{perfil.nombre}</p>
-              <p className="text-xs text-muted-foreground">{perfil.rol}</p>
-            </div>
-          </button>
-        ))}
-      </div>
+    <div>
+      {PERFILES_MOCK.filter((p) => p.perfilId !== excluir).map((perfil) => (
+        <button
+          key={perfil.perfilId}
+          onClick={() => onChange(perfil.perfilId)}
+          className={`perfil-btn-select${value === perfil.perfilId ? " selected" : ""}`}
+        >
+          <img src={perfil.foto} alt={perfil.nombre} onError={(e) => { (e.target as HTMLImageElement).src = "https://i.pravatar.cc/300?img=1" }} />
+          <div>
+            <div className="ps-nombre">{perfil.nombre}</div>
+            <div className="ps-rol">{perfil.rol}</div>
+          </div>
+        </button>
+      ))}
     </div>
   )
 }
 
-function Estrellas({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+function StarPicker({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   const [hover, setHover] = useState(0)
   return (
-    <div className="flex gap-1">
+    <div className="star-picker">
       {[1, 2, 3, 4, 5].map((n) => (
         <button
           key={n}
+          className={`star-btn${(hover || value) >= n ? " active" : ""}`}
           onClick={() => onChange(n)}
           onMouseEnter={() => setHover(n)}
           onMouseLeave={() => setHover(0)}
-          className="text-3xl leading-none transition-transform hover:scale-110 focus:outline-none"
           aria-label={`${n} estrella${n > 1 ? "s" : ""}`}
         >
-          <span className={(hover || value) >= n ? "text-yellow-400" : "text-muted-foreground/30"}>★</span>
+          ★
         </button>
       ))}
     </div>
@@ -86,7 +74,6 @@ export default function Avalar() {
   const perfilAvalado: Perfil | undefined = PERFILES_MOCK.find((p) => p.perfilId === avalado)
   const autoAval = avalado !== "" && avalador !== "" && avalado === avalador
 
-  // Resetear pasos dependientes cuando cambia una selección previa
   function seleccionarAvalado(id: string) {
     setAvalado(id)
     setBrazo("")
@@ -103,7 +90,6 @@ export default function Avalar() {
 
   async function enviar() {
     setEstado("enviando")
-    // TODO: POST /api/avalar llama a crearAval() de Arkiv con WalletClient cuando esté listo
     await fetch("/api/avalar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -123,131 +109,137 @@ export default function Avalar() {
 
   if (estado === "exito") {
     return (
-      <div className="max-w-lg mx-auto px-4 py-16 text-center space-y-4">
-        <p className="text-4xl">🎉</p>
-        <h2 className="text-xl font-semibold">¡Aval registrado!</h2>
-        <Button variant="outline" onClick={() => {
-          setAvalado(""); setAvalador(""); setBrazo(""); setObjetivo("")
-          setPuntuacion(0); setComentario(""); setEstado("idle")
-        }}>
-          Avalar a alguien más
-        </Button>
+      <div className="container-sm">
+        <div className="exito-wrap">
+          <div className="exito-icon">✅</div>
+          <h2>¡Aval registrado!</h2>
+          <p>Tu aval quedó registrado de forma verificable en la red.</p>
+          <button
+            className="btn-primary"
+            style={{ maxWidth: 260, margin: "0 auto" }}
+            onClick={() => {
+              setAvalado(""); setAvalador(""); setBrazo(""); setObjetivo("")
+              setPuntuacion(0); setComentario(""); setEstado("idle")
+            }}
+          >
+            Emitir otro aval
+          </button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-10 space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Avalar a alguien</h1>
+    <div className="container-sm">
+      <div className="avalar-wrap">
+        <h2>Emitir un aval</h2>
+        <p className="page-subtitle">Respalda a un miembro de la comunidad. Tu aval queda registrado de forma verificable.</p>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <p className="font-medium">Paso 1 — ¿A quién avalás?</p>
-        </CardHeader>
-        <CardContent>
-          <SelectorPerfil label="" value={avalado} onChange={seleccionarAvalado} />
-        </CardContent>
-      </Card>
+        <div className="form-section">
+          <div className="form-section-title">Paso 1</div>
+          <div className="form-section-label">¿A quién avalás?</div>
+          <SelectorPerfil value={avalado} onChange={seleccionarAvalado} />
+        </div>
 
-      {avalado && (
-        <Card>
-          <CardHeader className="pb-2">
-            <p className="font-medium">Paso 2 — ¿Quién sos?</p>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <SelectorPerfil label="" value={avalador} onChange={setAvalador} />
+        {avalado && (
+          <div className="form-section">
+            <div className="form-section-title">Paso 2</div>
+            <div className="form-section-label">¿Quién sos?</div>
+            <SelectorPerfil value={avalador} onChange={setAvalador} excluir={avalado} />
             {autoAval && (
-              <p className="text-sm text-destructive font-medium">No podés avalarte a vos mismo.</p>
+              <div className="auto-aval-warning">No podés avalarte a vos mismo.</div>
             )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
 
-      {avalado && avalador && !autoAval && (
-        <Card>
-          <CardHeader className="pb-2">
-            <p className="font-medium">Paso 3 — ¿Qué tipo de aval?</p>
-          </CardHeader>
-          <CardContent className="flex gap-3">
-            {(["blando", "tecnico"] as const).map((b) => (
-              <Button
-                key={b}
-                variant={brazo === b ? "default" : "outline"}
-                onClick={() => seleccionarBrazo(b)}
-                className="flex-1"
+        {avalado && avalador && !autoAval && (
+          <div className="form-section">
+            <div className="form-section-title">Paso 3</div>
+            <div className="form-section-label">¿Qué tipo de aval?</div>
+            <div className="brazo-selector">
+              <div
+                className={`brazo-option${brazo === "blando" ? " selected-blando" : ""}`}
+                onClick={() => seleccionarBrazo("blando")}
               >
-                {b === "blando" ? "Blandas" : "Técnicas"}
-              </Button>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+                <span className="brazo-icon">🤝</span>
+                <span className="brazo-label">Blandas</span>
+              </div>
+              <div
+                className={`brazo-option${brazo === "tecnico" ? " selected-tecnico" : ""}`}
+                onClick={() => seleccionarBrazo("tecnico")}
+              >
+                <span className="brazo-icon">⚙️</span>
+                <span className="brazo-label">Técnicas</span>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {brazo && (
-        <Card>
-          <CardHeader className="pb-2">
-            <p className="font-medium">Paso 4 — ¿Sobre qué?</p>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            {brazo === "blando"
-              ? ITEMS_BLANDOS.map((item) => (
-                  <Button
-                    key={item.key}
-                    variant={objetivo === item.key ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => { setObjetivo(item.key); setPuntuacion(0) }}
-                  >
-                    {item.label}
-                  </Button>
-                ))
-              : (perfilAvalado?.hitos ?? []).map((hito) => (
-                  <Button
-                    key={hito.id}
-                    variant={objetivo === hito.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => { setObjetivo(hito.id); setPuntuacion(0) }}
-                  >
-                    {hito.texto}
-                  </Button>
-                ))}
-            {brazo === "tecnico" && perfilAvalado?.hitos.length === 0 && (
-              <p className="text-sm text-muted-foreground">Este perfil no tiene hitos técnicos.</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+        {brazo && (
+          <div className="form-section">
+            <div className="form-section-title">Paso 4</div>
+            <div className="form-section-label">
+              {brazo === "blando" ? "¿Qué habilidad avalás?" : "¿Qué hito avalás?"}
+            </div>
+            <div className="items-grid">
+              {brazo === "blando"
+                ? ITEMS_BLANDOS.map((item) => (
+                    <button
+                      key={item.key}
+                      className={`item-btn${objetivo === item.key ? " selected" : ""}`}
+                      onClick={() => { setObjetivo(item.key); setPuntuacion(0) }}
+                    >
+                      {item.label}
+                    </button>
+                  ))
+                : (perfilAvalado?.hitos ?? []).map((hito) => (
+                    <button
+                      key={hito.id}
+                      className={`item-btn${objetivo === hito.id ? " selected" : ""}`}
+                      onClick={() => { setObjetivo(hito.id); setPuntuacion(0) }}
+                    >
+                      {hito.texto}
+                    </button>
+                  ))}
+              {brazo === "tecnico" && perfilAvalado?.hitos.length === 0 && (
+                <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
+                  Este perfil no tiene hitos técnicos.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
-      {objetivo && (
-        <Card>
-          <CardHeader className="pb-2">
-            <p className="font-medium">Paso 5 — Puntuación</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Estrellas value={puntuacion} onChange={setPuntuacion} />
-
+        {objetivo && (
+          <div className="form-section">
+            <div className="form-section-title">Paso 5</div>
+            <div className="form-section-label">Puntuación</div>
+            <div className="form-group">
+              <StarPicker value={puntuacion} onChange={setPuntuacion} />
+            </div>
             {puntuacion > 0 && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Comentario (opcional)</p>
-                <textarea
-                  value={comentario}
-                  onChange={(e) => setComentario(e.target.value)}
-                  placeholder="Contá algo sobre esta persona..."
-                  rows={3}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 resize-none transition"
-                />
-                <Button
+              <>
+                <div className="form-group">
+                  <label className="form-label">Comentario (opcional)</label>
+                  <textarea
+                    className="form-textarea"
+                    value={comentario}
+                    onChange={(e) => setComentario(e.target.value)}
+                    placeholder="Contá por qué avalás esto..."
+                  />
+                </div>
+                <button
+                  className="btn-primary"
                   onClick={enviar}
                   disabled={estado === "enviando"}
-                  className="w-full"
-                  size="lg"
                 >
-                  {estado === "enviando" ? "Enviando..." : "Avalar"}
-                </Button>
-              </div>
+                  {estado === "enviando" ? "Enviando..." : "Enviar aval →"}
+                </button>
+              </>
             )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

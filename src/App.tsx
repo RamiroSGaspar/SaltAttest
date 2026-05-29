@@ -8,8 +8,11 @@ import Registro from "./pages/Registro"
 export default function App() {
   return (
     <BrowserRouter>
+      <div className="bg-atmosphere" />
+      <div className="bg-blob-center" />
+      <div className="bg-grid" />
       <NavBar />
-      <main style={{ padding: "2rem" }}>
+      <main className="sa-main">
         <Routes>
           <Route path="/" element={<Inicio />} />
           <Route path="/perfil/:id" element={<Perfil />} />

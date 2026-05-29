@@ -1,7 +1,3 @@
-import { CheckCircle } from "lucide-react"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import type { Perfil, Reputacion } from "@/lib/arkiv/types"
 
 interface Props {
@@ -9,90 +5,80 @@ interface Props {
   reputacion: Reputacion
 }
 
-function Estrellas({ valor, etiqueta }: { valor: number; etiqueta: string }) {
-  const llenas = Math.floor(valor)
-  const fraccion = valor - llenas
-
+function Estrellas({ valor, colorClass }: { valor: number; colorClass: "azul" | "" }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-xs text-muted-foreground font-medium w-20">{etiqueta}</span>
-      <div className="flex items-center gap-0.5">
-        {[1, 2, 3, 4, 5].map((i) => (
+    <div className="estrellas-row">
+      {[1, 2, 3, 4, 5].map((i) => {
+        const llena = i <= Math.floor(valor)
+        const media = !llena && i === Math.ceil(valor) && valor % 1 >= 0.25
+        return (
           <span
             key={i}
-            className={
-              i <= llenas
-                ? "text-yellow-400 text-base leading-none"
-                : i === llenas + 1 && fraccion >= 0.5
-                ? "text-yellow-300 text-base leading-none"
-                : "text-muted-foreground/30 text-base leading-none"
-            }
+            className={`estrella-icon${llena || media ? ` llena${colorClass ? ` ${colorClass}` : ""}` : ""}`}
+            style={media ? { opacity: 0.55 } : undefined}
           >
             ★
           </span>
-        ))}
-      </div>
-      <span className="text-sm font-semibold tabular-nums">{valor.toFixed(1)}</span>
+        )
+      })}
+      <span className={`estrella-numero ${colorClass === "azul" ? "blando" : "tecnico"}`}>
+        {valor.toFixed(1)}
+      </span>
     </div>
   )
 }
 
 export function TarjetaPerfil({ perfil, reputacion }: Props) {
-  const iniciales = perfil.nombre
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase()
-
   const hitosVisibles = perfil.hitos.slice(0, 2)
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader className="pb-3">
-        <div className="flex items-start gap-4">
-          <Avatar className="h-16 w-16">
-            <AvatarImage src={perfil.foto} alt={perfil.nombre} />
-            <AvatarFallback>{iniciales}</AvatarFallback>
-          </Avatar>
+    <div className="tarjeta-wow">
+      <div className="tarjeta-top">
+        <img
+          className="tarjeta-foto"
+          src={perfil.foto}
+          alt={perfil.nombre}
+          onError={(e) => { (e.target as HTMLImageElement).src = "https://i.pravatar.cc/300?img=1" }}
+        />
+        <div className="tarjeta-info">
+          <div className="tarjeta-nombre-row">
+            <span className="tarjeta-nombre">{perfil.nombre}</span>
+            {perfil.verificado && (
+              <div className="badge-verificado" title="Verificado">✓</div>
+            )}
+          </div>
+          <div className="tarjeta-rol">{perfil.rol}</div>
+          <div className="tarjeta-area">{perfil.area}</div>
+        </div>
+      </div>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-base font-semibold leading-tight truncate">{perfil.nombre}</h3>
-              {perfil.verificado && (
-                <Badge className="gap-1 text-xs px-1.5 py-0.5 bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100">
-                  <CheckCircle className="h-3 w-3" />
-                  Verificado
-                </Badge>
-              )}
+      <div className="tarjeta-estrellas">
+        <div className="estrella-bloque">
+          <div className="estrella-label blando">
+            <span className="dot" />
+            Blandas
+          </div>
+          <Estrellas valor={reputacion.estrellasBlandas} colorClass="azul" />
+        </div>
+        <div className="estrella-bloque">
+          <div className="estrella-label tecnico">
+            <span className="dot" />
+            Técnicas
+          </div>
+          <Estrellas valor={reputacion.estrellasTecnicas} colorClass="" />
+        </div>
+      </div>
+
+      {hitosVisibles.length > 0 && (
+        <div className="tarjeta-hitos">
+          {hitosVisibles.map((hito) => (
+            <div key={hito.id} className="tarjeta-hito">
+              <span className="hito-dot" />
+              <span>{hito.texto}</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-0.5">{perfil.rol}</p>
-            <Badge variant="secondary" className="mt-1.5 text-xs">
-              {perfil.area}
-            </Badge>
-          </div>
+          ))}
         </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* Estrellas separadas */}
-        <div className="space-y-1.5">
-          <Estrellas valor={reputacion.estrellasBlandas} etiqueta="★ Blandas" />
-          <Estrellas valor={reputacion.estrellasTecnicas} etiqueta="★ Técnicas" />
-        </div>
-
-        {/* Hitos */}
-        {hitosVisibles.length > 0 && (
-          <div className="border-t pt-3 space-y-1.5">
-            {hitosVisibles.map((hito) => (
-              <div key={hito.id} className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="mt-0.5 text-xs">•</span>
-                <span className="leading-snug">{hito.texto}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </div>
   )
 }
