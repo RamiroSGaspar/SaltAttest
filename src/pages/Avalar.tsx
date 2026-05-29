@@ -130,27 +130,29 @@ export default function Avalar() {
   }
 
   return (
-    <div className="container-sm">
+    <div className="container avalar-container">
       <div className="avalar-wrap">
         <h2>Emitir un aval</h2>
         <p className="page-subtitle">Respalda a un miembro de la comunidad. Tu aval queda registrado de forma verificable.</p>
 
-        <div className="form-section">
-          <div className="form-section-title">Paso 1</div>
-          <div className="form-section-label">¿A quién avalás?</div>
-          <SelectorPerfil value={avalado} onChange={seleccionarAvalado} />
-        </div>
-
-        {avalado && (
+        <div className={`avalar-selectors${avalado ? " dos-columnas" : ""}`}>
           <div className="form-section">
-            <div className="form-section-title">Paso 2</div>
-            <div className="form-section-label">¿Quién sos?</div>
-            <SelectorPerfil value={avalador} onChange={setAvalador} excluir={avalado} />
-            {autoAval && (
-              <div className="auto-aval-warning">No podés avalarte a vos mismo.</div>
-            )}
+            <div className="form-section-title">Paso 1</div>
+            <div className="form-section-label">¿A quién avalás?</div>
+            <SelectorPerfil value={avalado} onChange={seleccionarAvalado} />
           </div>
-        )}
+
+          {avalado && (
+            <div className="form-section">
+              <div className="form-section-title">Paso 2</div>
+              <div className="form-section-label">¿Quién sos?</div>
+              <SelectorPerfil value={avalador} onChange={setAvalador} excluir={avalado} />
+              {autoAval && (
+                <div className="auto-aval-warning">No podés avalarte a vos mismo.</div>
+              )}
+            </div>
+          )}
+        </div>
 
         {avalado && avalador && !autoAval && (
           <div className="form-section">

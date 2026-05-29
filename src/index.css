@@ -761,6 +761,29 @@ a {
   background: var(--accent-hover);
 }
 
+/* ===== AVALAR LAYOUT ===== */
+.avalar-container {
+  max-width: 900px;
+}
+
+.avalar-selectors {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.avalar-selectors.dos-columnas {
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .avalar-selectors.dos-columnas {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ===== FORMS (Avalar & Registro) ===== */
 .avalar-wrap,
 .registro-wrap {
