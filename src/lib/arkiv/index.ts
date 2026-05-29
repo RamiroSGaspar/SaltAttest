@@ -8,7 +8,7 @@ import type { Perfil, Aval, Reputacion } from "./types"
 export type { Perfil, Aval, Reputacion }
 export type { Hito } from "./types"
 
-// ── Clientes ────────────────────────────────────────────────────────────────
+// ── Clientes ────────────────────────────────────────────────────────────────────────────
 
 export const publicClient = createPublicClient({
   chain: braga,
@@ -26,7 +26,7 @@ function getWalletClient() {
   })
 }
 
-// ── Escrituras (servidor / scripts) ─────────────────────────────────────────
+// ── Escrituras (servidor / scripts) ─────────────────────────────────────────────
 
 export async function crearPerfil(datos: Omit<Perfil, "verificado"> & { verificado?: boolean }): Promise<string> {
   const walletClient = getWalletClient()
@@ -72,7 +72,7 @@ export async function crearAval(datos: Aval): Promise<string> {
   return datos.avalId
 }
 
-// ── Lecturas (frontend / servidor) ──────────────────────────────────────────
+// ── Lecturas (frontend / servidor) ──────────────────────────────────────────────
 
 export async function traerPerfil(perfilId: string): Promise<Perfil | null> {
   const result = await publicClient
@@ -118,32 +118,51 @@ export async function traerAvales(perfilId: string): Promise<Aval[]> {
   return result.entities.map((e) => e.toJson() as Aval)
 }
 
-// ── Cálculo de estrellas (JS puro, sin Arkiv) ────────────────────────────────
+// ── Cálculo de estrellas (JS puro, sin Arkiv) ────────────────────────────────────────────
 
 export function calcularEstrellas(avales: Aval[]): Reputacion {
   const perfilId = avales[0]?.avalado ?? ""
 
-  function promedioGrupos(items: Aval[]): number {
+  function agrupar(items: Aval[]): Map<string, number[]> {
     const grupos = new Map<string, number[]>()
     for (const a of items) {
       if (!grupos.has(a.objetivo)) grupos.set(a.objetivo, [])
       grupos.get(a.objetivo)!.push(a.puntuacion)
     }
-    if (grupos.size === 0) return 0
-    const promediosPorObjetivo = [...grupos.values()].map(
-      (puntos) => puntos.reduce((s, p) => s + p, 0) / puntos.length
-    )
-    return promediosPorObjetivo.reduce((s, p) => s + p, 0) / promediosPorObjetivo.length
+    return grupos
   }
+
+  function promedioDeGrupos(grupos: Map<string, number[]>): number {
+    if (grupos.size === 0) return 0
+    const promedios = [...grupos.values()].map(
+      (pts) => pts.reduce((s, p) => s + p, 0) / pts.length
+    )
+    return Math.round((promedios.reduce((s, p) => s + p, 0) / promedios.length) * 10) / 10
+  }
+
+  function round1(n: number) { return Math.round(n * 10) / 10 }
 
   const blandos = avales.filter((a) => a.brazo === "blando")
   const tecnicos = avales.filter((a) => a.brazo === "tecnico")
 
+  const gruposBlandos = agrupar(blandos)
+  const gruposTecnicos = agrupar(tecnicos)
+
+  const detalleBlandas = [...gruposBlandos.entries()].map(([item, pts]) => ({
+    item,
+    promedio: round1(pts.reduce((s, p) => s + p, 0) / pts.length),
+  }))
+
+  const detalleTecnicas = [...gruposTecnicos.entries()].map(([hitoId, pts]) => ({
+    hitoId,
+    promedio: round1(pts.reduce((s, p) => s + p, 0) / pts.length),
+  }))
+
   return {
     perfilId,
-    estrellasBlandas: promedioGrupos(blandos),
-    estrellasTecnicas: promedioGrupos(tecnicos),
-    detalleBlandas: [],
-    detalleTecnicas: [],
+    estrellasBlandas: promedioDeGrupos(gruposBlandos),
+    estrellasTecnicas: promedioDeGrupos(gruposTecnicos),
+    detalleBlandas,
+    detalleTecnicas,
   }
 }

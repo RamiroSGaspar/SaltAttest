@@ -10,17 +10,17 @@
 
 SaltaDev es una comunidad activa, pero su conocimiento colectivo vive en un canal de WhatsApp saturado y desordenado. Cuando alguien necesita algo concreto —un especialista en una tecnología, ayuda para un proyecto, un mentor— ese pedido suele perderse en el ruido: nadie responde, o la conversación se entierra bajo los mensajes siguientes.
 
-Y cuando alguien sí responde, aparece el problema más profundo: **¿cómo sabés que esa persona realmente sabe lo que dice saber?** Cualquiera puede afirmar que "la tiene clara" en algo. No hay forma de distinguir a quien efectivamente tiene experiencia de quien solo se anima a contestar. El talento real de la comunidad termina siendo invisible, y la confianza depende del boca a boca o de la suerte.
+Y cuando alguien sí responde, aparece el problema más profundo: **¿cómo sabés que esa persona realmente sabe lo que dice saber?** Cualquiera puede afirmar que “la tiene clara” en algo. No hay forma de distinguir a quien efectivamente tiene experiencia de quien solo se anima a contestar. El talento real de la comunidad termina siendo invisible, y la confianza depende del boca a boca o de la suerte.
 
 ---
 
 ## La solución
 
-**SaltAttest** es una red social cerrada de SaltaDev donde los miembros arman su perfil con su información técnica y, sobre todo, **se avalan entre sí**. El aval de la comunidad es lo que convierte un perfil de *"lo que yo digo de mí"* en *"lo que la comunidad confirma de mí"*.
+**SaltAttest** es una red social cerrada de SaltaDev donde los miembros arman su perfil con su información técnica y, sobre todo, **se avalan entre sí**. El aval de la comunidad es lo que convierte un perfil de *“lo que yo digo de mí”* en *“lo que la comunidad confirma de mí”*.
 
 Sobre esa base de reputación verificable corre una **IA que actúa como buscador en lenguaje natural**: le pedís a quién necesitás y te devuelve a las personas más avaladas que encajan, presentadas de forma clara y natural —no como una lista cruda de base de datos.
 
-Lo innovador no es "un directorio con buscador". Es que **las recomendaciones de la IA son confiables porque se apoyan en reputación que no se puede inflar**: la IA no prioriza a quien mejor se vende, sino a quien la comunidad efectivamente respalda.
+Lo innovador no es “un directorio con buscador”. Es que **las recomendaciones de la IA son confiables porque se apoyan en reputación que no se puede inflar**: la IA no prioriza a quien mejor se vende, sino a quien la comunidad efectivamente respalda.
 
 ### Para qué sirve
 
@@ -41,7 +41,7 @@ Los datos básicos de un perfil podrían vivir en cualquier lado. Pero los **ava
 - **Que no se puedan borrar a escondidas.** En una base normal, un registro se edita o elimina sin dejar rastro. En Arkiv, el historial es verificable: la reputación que construiste no depende de la buena voluntad de quien administra el servidor.
 - **Que no dependan de un único punto que pueda perderse.** La reputación de la comunidad no debería evaporarse por un error de servidor, un cierre de proyecto o una decisión unilateral.
 
-**Arkiv es el lugar correcto para lo que tiene que ser confiable y permanente —los avales—**, y es lo que hace que la confianza de toda la plataforma sea real y no una promesa de "confiá en nosotros".
+**Arkiv es el lugar correcto para lo que tiene que ser confiable y permanente —los avales—**, y es lo que hace que la confianza de toda la plataforma sea real y no una promesa de “confiá en nosotros”.
 
 ---
 
@@ -94,7 +94,7 @@ Todas las entidades usan `app: "saltrust"` como namespace, garantizando que las 
 | Capa | Tecnología |
 |------|------------|
 | Frontend | Vite + React + TypeScript |
-| UI | shadcn/ui + Tailwind CSS v3 |
+| UI | CSS design system propio (Space Grotesk + DM Sans) |
 | Routing | react-router-dom v7 |
 | Blockchain | `@arkiv-network/sdk` — testnet Braga |
 | IA | Anthropic API — `claude-haiku-4-5` |
@@ -147,15 +147,15 @@ npm run dev
 
 La app corre en `http://localhost:5173`. Las API routes de Vercel se pueden testear localmente con `vercel dev` (requiere Vercel CLI).
 
-### 4. Seed de datos en Arkiv (opcional)
+### 4. Seed de datos en Arkiv (opcional, una sola vez)
 
-Para cargar perfiles reales en Braga y ver la integración on-chain:
+Para cargar los 12 perfiles y sus avales de muestra en Braga:
 
 ```bash
-npm run smoke-test
+npm run seed
 ```
 
-Mientras no haya datos en Braga, la app muestra 12 perfiles mock de la comunidad SaltaDev como fallback para que la demo no se vea vacía.
+Esto crea todas las entidades en la red Arkiv en batch. Mientras no haya datos en Braga, la app muestra los 12 perfiles mock como fallback para que la demo no se vea vacía.
 
 ---
 

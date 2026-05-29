@@ -9,7 +9,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "smoke-test": "npx tsx scripts/smoke-test.ts"
+    "smoke-test": "npx tsx scripts/smoke-test.ts",
+    "seed": "npx tsx scripts/seed.ts"
   },
   "dependencies": {
     "@arkiv-network/sdk": "^0.6.8",
