@@ -129,7 +129,3 @@ Este proyecto fue desarrollado con asistencia de **Claude Code** (Anthropic) com
 La funcionalidad de búsqueda inteligente de la app usa **`claude-haiku-4-5-20251001`** en tiempo de ejecución para escribir la presentación de resultados en lenguaje natural.
 
 ---
-
-## Licencia
-
-MIT
