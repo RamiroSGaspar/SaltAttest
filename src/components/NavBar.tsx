@@ -4,7 +4,7 @@ export default function NavBar() {
   return (
     <nav className="sa-nav">
       <NavLink to="/" className="nav-brand" end>
-        Salta<span className="brand-dot">Attest</span>
+        SaltaDev<span className="brand-dot"> Trust</span>
       </NavLink>
       <div className="nav-links">
         <NavLink

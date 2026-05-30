@@ -1,72 +1,76 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 
-type Estado = "idle" | "enviando" | "exito"
-
-interface FormData {
-  nombre: string
-  foto: string
-  rol: string
-  area: string
-  bio: string
-  hitos: string[]
-}
-
-const EMPTY: FormData = { nombre: "", foto: "", rol: "", area: "", bio: "", hitos: [] }
+type Hito = { id: string; texto: string }
 
 export default function Registro() {
-  const [form, setForm] = useState<FormData>(EMPTY)
-  const [estado, setEstado] = useState<Estado>("idle")
-
-  function set(field: keyof Omit<FormData, "hitos">, value: string) {
-    setForm((f) => ({ ...f, [field]: value }))
-  }
+  const navigate = useNavigate()
+  const [nombre, setNombre] = useState("")
+  const [foto, setFoto] = useState("")
+  const [rol, setRol] = useState("")
+  const [area, setArea] = useState("")
+  const [bio, setBio] = useState("")
+  const [hitos, setHitos] = useState<Hito[]>([])
+  const [enviando, setEnviando] = useState(false)
+  const [exito, setExito] = useState(false)
+  const [error, setError] = useState("")
 
   function agregarHito() {
-    setForm((f) => ({ ...f, hitos: [...f.hitos, ""] }))
+    setHitos([...hitos, { id: `h${Date.now()}`, texto: "" }])
   }
 
-  function actualizarHito(i: number, value: string) {
-    setForm((f) => {
-      const hitos = [...f.hitos]
-      hitos[i] = value
-      return { ...f, hitos }
-    })
+  function actualizarHito(id: string, texto: string) {
+    setHitos(hitos.map((h) => (h.id === id ? { ...h, texto } : h)))
   }
 
-  function quitarHito(i: number) {
-    setForm((f) => ({ ...f, hitos: f.hitos.filter((_, idx) => idx !== i) }))
+  function eliminarHito(id: string) {
+    setHitos(hitos.filter((h) => h.id !== id))
   }
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault()
-    setEstado("enviando")
-    await fetch("/api/crear-perfil", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        hitos: form.hitos
-          .filter((h) => h.trim())
-          .map((texto, i) => ({ id: `hito-${i + 1}`, texto })),
-      }),
-    })
-    setEstado("exito")
+    if (!nombre || !rol || !area || !bio) {
+      setError("Completá todos los campos obligatorios.")
+      return
+    }
+    setEnviando(true)
+    setError("")
+
+    const perfilId = `perfil-${Date.now()}`
+    const perfil = {
+      perfilId,
+      nombre,
+      foto: foto || `https://i.pravatar.cc/300?u=${perfilId}`,
+      rol,
+      area,
+      bio,
+      verificado: false,
+      hitos: hitos.filter((h) => h.texto.trim()),
+    }
+
+    try {
+      const res = await fetch("/api/crear-perfil", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(perfil),
+      })
+      if (!res.ok) throw new Error("Error del servidor")
+      setExito(true)
+      setTimeout(() => navigate(`/perfil/${perfilId}`), 2000)
+    } catch {
+      setError("No se pudo crear el perfil. Intentá de nuevo.")
+    } finally {
+      setEnviando(false)
+    }
   }
 
-  if (estado === "exito") {
+  if (exito) {
     return (
       <div className="container-sm">
         <div className="exito-wrap">
-          <div className="exito-icon">🎉</div>
-          <h2>¡Perfil creado!</h2>
-          <p>Ya podés recibir avales de la comunidad.</p>
-          <button
-            className="btn-primary"
-            style={{ maxWidth: 240, margin: "0 auto" }}
-            onClick={() => { setForm(EMPTY); setEstado("idle") }}
-          >
-            Crear otro perfil
-          </button>
+          <div className="exito-icon">✓</div>
+          <h2>Perfil creado</h2>
+          <p>Redirigiendo a tu perfil...</p>
         </div>
       </div>
     )
@@ -76,96 +80,109 @@ export default function Registro() {
     <div className="container-sm">
       <div className="registro-wrap">
         <h2>Crear perfil</h2>
-        <p className="page-subtitle">Registrate en SaltAttest para que la comunidad pueda avalarte.</p>
+        <p className="page-subtitle">Registrate en SaltaDev Trust para que la comunidad pueda avalarte.</p>
 
         <form onSubmit={enviar}>
           <div className="form-section" style={{ marginBottom: "1rem" }}>
             <div className="form-section-title">Datos básicos</div>
+            <div className="form-section-label">Cuéntanos quién sos</div>
 
-            <div className="campos-grid" style={{ marginTop: "1rem" }}>
+            <div className="campos-grid">
               <div className="form-group">
                 <label className="form-label">Nombre completo *</label>
                 <input
-                  required
                   className="form-input"
-                  value={form.nombre}
-                  onChange={(e) => set("nombre", e.target.value)}
-                  placeholder="Ada Lovelace"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  placeholder="Tu nombre"
+                  required
                 />
               </div>
+
               <div className="form-group">
-                <label className="form-label">URL de foto</label>
+                <label className="form-label">URL de foto (opcional)</label>
                 <input
-                  type="url"
                   className="form-input"
-                  value={form.foto}
-                  onChange={(e) => set("foto", e.target.value)}
+                  value={foto}
+                  onChange={(e) => setFoto(e.target.value)}
                   placeholder="https://..."
                 />
               </div>
+
               <div className="form-group">
                 <label className="form-label">Rol *</label>
                 <input
-                  required
                   className="form-input"
-                  value={form.rol}
-                  onChange={(e) => set("rol", e.target.value)}
-                  placeholder="Backend Developer"
+                  value={rol}
+                  onChange={(e) => setRol(e.target.value)}
+                  placeholder="Ej: Backend Developer"
+                  required
                 />
               </div>
+
               <div className="form-group">
                 <label className="form-label">Área *</label>
                 <input
-                  required
                   className="form-input"
-                  value={form.area}
-                  onChange={(e) => set("area", e.target.value)}
-                  placeholder="Backend"
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                  placeholder="Ej: Backend"
+                  required
                 />
               </div>
+
               <div className="form-group campo-full">
-                <label className="form-label">Bio</label>
+                <label className="form-label">Bio *</label>
                 <textarea
                   className="form-textarea"
-                  value={form.bio}
-                  onChange={(e) => set("bio", e.target.value)}
-                  placeholder="Contá brevemente a qué te dedicás..."
-                  rows={3}
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Contá en 2-3 oraciones qué hacés y qué te apasiona"
+                  required
                 />
               </div>
             </div>
           </div>
 
-          <div className="form-section" style={{ marginBottom: "1.5rem" }}>
-            <div className="form-section-title">Hitos / Logros</div>
-            <p className="no-hitos-hint" style={{ marginTop: "0.75rem" }}>
-              Agregá logros técnicos que la comunidad puede avalar.
-            </p>
-            {form.hitos.map((hito, i) => (
-              <div key={i} className="hito-row">
+          <div className="form-section" style={{ marginBottom: "1rem" }}>
+            <div className="form-section-title">Hitos técnicos</div>
+            <div className="form-section-label">Logros concretos que la comunidad puede avalar</div>
+
+            {hitos.length === 0 && (
+              <p className="no-hitos-hint">Sin hitos aún. Agregá tus logros más relevantes.</p>
+            )}
+
+            {hitos.map((hito) => (
+              <div key={hito.id} className="hito-row">
                 <input
                   className="form-input"
-                  value={hito}
-                  onChange={(e) => actualizarHito(i, e.target.value)}
-                  placeholder={`Logro ${i + 1}...`}
+                  value={hito.texto}
+                  onChange={(e) => actualizarHito(hito.id, e.target.value)}
+                  placeholder="Ej: Lideré la migración a microservicios"
                 />
                 <button
                   type="button"
                   className="btn-remove-hito"
-                  onClick={() => quitarHito(i)}
-                  aria-label="Quitar logro"
+                  onClick={() => eliminarHito(hito.id)}
                 >
                   ×
                 </button>
               </div>
             ))}
+
             <button type="button" className="btn-add-hito" onClick={agregarHito}>
-              + Agregar logro
+              + Agregar hito
             </button>
           </div>
 
-          <button type="submit" className="btn-primary" disabled={estado === "enviando"}>
-            {estado === "enviando" ? "Creando..." : "Crear perfil"}
+          {error && (
+            <div className="auto-aval-warning" style={{ marginBottom: "1rem" }}>
+              {error}
+            </div>
+          )}
+
+          <button type="submit" className="btn-primary" disabled={enviando}>
+            {enviando ? "Creando perfil..." : "Crear perfil"}
           </button>
         </form>
       </div>
