@@ -116,51 +116,6 @@ El buscador recibe la lista de perfiles con sus estrellas y el texto de búsqued
 
 ---
 
-## Correr localmente
-
-### 1. Clonar e instalar
-
-```bash
-git clone https://github.com/RamiroSGaspar/saltadev-trust.git
-cd saltadev-trust
-npm install
-```
-
-### 2. Configurar variables de entorno
-
-Crear un archivo `.env` en la raíz:
-
-```env
-# Clave privada de la wallet de la app (testnet Braga — sin fondos reales)
-PRIVATE_KEY=0x...
-
-# API key de Anthropic para el buscador con IA
-ANTHROPIC_API_KEY=sk-ant-...
-```
-
-> Para obtener fondos en Braga: https://braga.hoodi.arkiv.network/faucet/
-> La wallet de la app es `0xB6165137395424954Aeb22145800DFBeEB981640`.
-
-### 3. Iniciar el servidor de desarrollo
-
-```bash
-npm run dev
-```
-
-La app corre en `http://localhost:5173`. Las API routes de Vercel se pueden testear localmente con `vercel dev` (requiere Vercel CLI).
-
-### 4. Seed de datos en Arkiv (opcional, una sola vez)
-
-Para cargar los 12 perfiles y sus avales de muestra en Braga:
-
-```bash
-npm run seed
-```
-
-Esto crea todas las entidades en la red Arkiv en batch. Mientras no haya datos en Braga, la app muestra los 12 perfiles mock como fallback para que la demo no se vea vacía.
-
----
-
 ## Demo desplegada
 
 https://salta-dev-trust.vercel.app/
