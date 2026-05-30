@@ -22,6 +22,12 @@ function perfilATexto(perfil: Perfil, rep: Reputacion): string {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).end()
 
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    console.error("ANTHROPIC_API_KEY no configurada en el entorno")
+    return res.status(500).json({ error: "ANTHROPIC_API_KEY no configurada" })
+  }
+
   const { query, perfiles, reputaciones } = req.body as {
     query: string
     perfiles: Perfil[]
@@ -44,22 +50,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY ?? "",
+        "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 500,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: `Búsqueda: "${query}"\n\nPerfiles disponibles:\n${candidatos}` }],
       }),
     })
 
-    if (!apiRes.ok) return res.json(fallback)
+    if (!apiRes.ok) {
+      const errBody = await apiRes.text().catch(() => "")
+      console.error(`Anthropic API error ${apiRes.status}: ${errBody}`)
+      return res.json(fallback)
+    }
 
     const data = await apiRes.json()
     const texto: string = data.content?.[0]?.text ?? ""
-    const parsed = JSON.parse(texto) as { orden: string[]; presentacion: string }
+
+    let parsed: { orden: string[]; presentacion: string }
+    try {
+      parsed = JSON.parse(texto)
+    } catch (parseErr) {
+      console.error("Error parseando respuesta de Claude:", parseErr, "| texto recibido:", texto)
+      return res.json(fallback)
+    }
 
     const porId = new Map(perfiles.map((p) => [p.perfilId, p]))
     const ordenados = parsed.orden
@@ -67,7 +84,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .filter((p): p is Perfil => p !== undefined)
 
     res.json({ ordenados, presentacion: parsed.presentacion ?? "" })
-  } catch {
+  } catch (err) {
+    console.error("Error en /api/buscar:", err instanceof Error ? err.message : err)
     res.json(fallback)
   }
 }
