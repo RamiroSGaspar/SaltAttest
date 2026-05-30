@@ -1,22 +1,41 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
 import type { Perfil, Reputacion } from "../src/lib/arkiv/types.js"
 
-const SYSTEM_PROMPT = `Sos el buscador de SaltaDev. El usuario busca a alguien con características específicas. Analizá cada candidato y devolvé SOLO los que realmente encajan.
+const KEYWORDS_TECNICAS = new Set([
+  "técnico", "developer", "devops", "data", "código", "programar",
+  "backend", "frontend", "mobile", "ios", "android", "qa", "testing", "infra",
+  "cloud", "ml", "ia", "machine",
+])
 
-REGLAS ESTRICTAS:
-1. Filtrá por ROL y ÁREA primero. Si buscan 'data science', solo devolvés Data Scientists. Si buscan 'devops', solo DevOps. Si buscan 'frontend', solo Frontend Developers.
-2. Dentro de los que encajan por rol, ordená por la estrella más relevante:
-   - Si la búsqueda pide alguien técnico/especialista → ordenar por ★Técnicas desc.
-   - Si pide comunicador/mentor/comunidad → ordenar por ★Blandas desc.
-   - Si es ambiguo → ordenar por promedio de ambas estrellas desc.
-3. Devolvé MÁXIMO 3-4 perfiles, MÍNIMO 0. Si nadie encaja, devolvé [].
-4. NUNCA incluyas perfiles de un área diferente a la buscada.
-5. Respondé SOLO con JSON válido sin markdown:
-   { "orden": ["perfilId1","perfilId2",...], "presentacion": "texto cálido de 2-3 oraciones presentando los resultados y por qué encajan" }`
+const KEYWORDS_BLANDAS = new Set([
+  "comunidad", "comunicar", "mentor", "colaborar", "blando",
+  "participar", "ayudar", "liderazgo", "soft",
+])
 
-function perfilALinea(perfil: Perfil, rep: Reputacion): string {
-  const hitos = perfil.hitos.map((h) => h.texto).join(", ") || "ninguno"
-  return `- ${perfil.perfilId} | ${perfil.nombre} | Rol: ${perfil.rol} | Área: ${perfil.area} | ★Blandas: ${rep.estrellasBlandas.toFixed(1)} | ★Técnicas: ${rep.estrellasTecnicas.toFixed(1)} | Hitos: ${hitos}`
+function palabrasClave(query: string): string[] {
+  return query.toLowerCase().split(/\s+/).filter((w) => w.length > 3)
+}
+
+function encaja(perfil: Perfil, keywords: string[]): boolean {
+  const haystack = [
+    perfil.rol,
+    perfil.area,
+    perfil.bio,
+    ...perfil.hitos.map((h) => h.texto),
+  ].join(" ").toLowerCase()
+  return keywords.some((kw) => haystack.includes(kw))
+}
+
+function tipoRanking(queryLower: string): "tecnica" | "blanda" | "promedio" {
+  if ([...KEYWORDS_TECNICAS].some((kw) => queryLower.includes(kw))) return "tecnica"
+  if ([...KEYWORDS_BLANDAS].some((kw) => queryLower.includes(kw))) return "blanda"
+  return "promedio"
+}
+
+function score(rep: Reputacion, tipo: "tecnica" | "blanda" | "promedio"): number {
+  if (tipo === "tecnica") return rep.estrellasTecnicas
+  if (tipo === "blanda") return rep.estrellasBlandas
+  return (rep.estrellasBlandas + rep.estrellasTecnicas) / 2
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -34,23 +53,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     reputaciones: Record<string, Reputacion>
   }
 
-  const fallback = { ordenados: perfiles, presentacion: "" }
+  const rep = (p: Perfil): Reputacion =>
+    reputaciones[p.perfilId] ?? {
+      perfilId: p.perfilId, estrellasBlandas: 0, estrellasTecnicas: 0,
+      detalleBlandas: [], detalleTecnicas: [],
+    }
+
+  // PASO 1 — Filtrado por código
+  const keywords = palabrasClave(query)
+  const filtrados = keywords.length > 0 && perfiles.some((p) => encaja(p, keywords))
+    ? perfiles.filter((p) => encaja(p, keywords))
+    : perfiles
+
+  // PASO 2 — Ranking por código
+  const tipo = tipoRanking(query.toLowerCase())
+  const top4 = [...filtrados]
+    .sort((a, b) => score(rep(b), tipo) - score(rep(a), tipo))
+    .slice(0, 4)
+
+  if (top4.length === 0) {
+    return res.json({ ordenados: [], presentacion: "" })
+  }
+
+  // PASO 3 — Claude escribe solo la presentación
+  const resumen = top4
+    .map((p) => {
+      const r = rep(p)
+      return `- ${p.nombre} (${p.rol}): ★Blandas ${r.estrellasBlandas.toFixed(1)}, ★Técnicas ${r.estrellasTecnicas.toFixed(1)}`
+    })
+    .join("\n")
+
+  const userMessage =
+    `El usuario buscó: "${query}"\n\n` +
+    `Resultados encontrados:\n${resumen}\n\n` +
+    `Escribí 2-3 oraciones cálidas y naturales presentando estos resultados.`
 
   try {
-    const candidatos = perfiles
-      .map((p) =>
-        perfilALinea(p, reputaciones[p.perfilId] ?? {
-          perfilId: p.perfilId, estrellasBlandas: 0, estrellasTecnicas: 0,
-          detalleBlandas: [], detalleTecnicas: [],
-        })
-      )
-      .join("\n")
-
-    const userMessage =
-      `Búsqueda: "${query}"\n\n` +
-      `Candidatos disponibles:\n${candidatos}\n\n` +
-      `Si la búsqueda es muy ambigua o genérica (sin rol claro), devolvé los 4 con mejor promedio de ★Blandas y ★Técnicas.`
-
     const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -60,8 +98,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 500,
-        system: SYSTEM_PROMPT,
+        max_tokens: 200,
+        system: "Escribí 2-3 oraciones presentando estos resultados de búsqueda de forma cálida y natural. SOLO el texto, sin JSON.",
         messages: [{ role: "user", content: userMessage }],
       }),
     })
@@ -69,28 +107,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!apiRes.ok) {
       const errBody = await apiRes.text().catch(() => "")
       console.error(`Anthropic API error ${apiRes.status}: ${errBody}`)
-      return res.json(fallback)
+      return res.json({ ordenados: top4, presentacion: "" })
     }
 
     const data = await apiRes.json()
-    const texto: string = data.content?.[0]?.text ?? ""
+    const presentacion: string = data.content?.[0]?.text ?? ""
 
-    let parsed: { orden: string[]; presentacion: string }
-    try {
-      parsed = JSON.parse(texto)
-    } catch (parseErr) {
-      console.error("Error parseando respuesta de Claude:", parseErr, "| texto recibido:", texto)
-      return res.json(fallback)
-    }
-
-    const porId = new Map(perfiles.map((p) => [p.perfilId, p]))
-    const ordenados = parsed.orden
-      .map((id) => porId.get(id))
-      .filter((p): p is Perfil => p !== undefined)
-
-    res.json({ ordenados, presentacion: parsed.presentacion ?? "" })
+    res.json({ ordenados: top4, presentacion })
   } catch (err) {
     console.error("Error en /api/buscar:", err instanceof Error ? err.message : err)
-    res.json(fallback)
+    res.json({ ordenados: top4, presentacion: "" })
   }
 }
