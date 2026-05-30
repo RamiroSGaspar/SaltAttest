@@ -4,17 +4,19 @@ export async function buscarConIA(
   query: string,
   perfiles: Perfil[],
   reputaciones: Record<string, Reputacion>
-): Promise<{ ordenados: Perfil[]; presentacion: string }> {
-  const fallback = { ordenados: perfiles, presentacion: "" }
+): Promise<{ ordenados: Perfil[]; presentacion: string; error?: string }> {
   try {
     const res = await fetch("/api/buscar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query, perfiles, reputaciones }),
     })
-    if (!res.ok) return fallback
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({})) as { error?: string }
+      return { ordenados: perfiles, presentacion: "", error: data.error ?? `Error del servidor (${res.status})` }
+    }
     return res.json()
   } catch {
-    return fallback
+    return { ordenados: perfiles, presentacion: "", error: "No se pudo conectar con el servidor." }
   }
 }

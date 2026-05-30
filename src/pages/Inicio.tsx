@@ -10,6 +10,7 @@ export default function Inicio() {
   const [reputaciones, setReputaciones] = useState<Record<string, Reputacion>>({})
   const [presentacion, setPresentacion] = useState("")
   const [buscando, setBuscando] = useState(false)
+  const [errorBusqueda, setErrorBusqueda] = useState<string | null>(null)
   const navigate = useNavigate()
 
   async function buscar() {
@@ -17,6 +18,7 @@ export default function Inicio() {
     setBuscando(true)
     setPresentacion("")
     setResultados(null)
+    setErrorBusqueda(null)
 
     const apiRes = await fetch("/api/perfiles").catch(() => null)
     const { perfiles, reputaciones: reps } = apiRes?.ok
@@ -25,9 +27,10 @@ export default function Inicio() {
 
     setReputaciones(reps)
 
-    const { ordenados, presentacion: texto } = await buscarConIA(query, perfiles, reps)
+    const { ordenados, presentacion: texto, error } = await buscarConIA(query, perfiles, reps)
     setResultados(ordenados)
     setPresentacion(texto)
+    setErrorBusqueda(error ?? null)
     setBuscando(false)
   }
 
@@ -65,7 +68,13 @@ export default function Inicio() {
         </div>
       )}
 
-      {!buscando && resultados === null && (
+      {!buscando && errorBusqueda && (
+        <div className="error-busqueda">
+          <p>{errorBusqueda}</p>
+        </div>
+      )}
+
+      {!buscando && resultados === null && !errorBusqueda && (
         <div className="empty-state">
           <p>Ingresá un término y hacé click en Buscar.</p>
         </div>
